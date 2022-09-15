@@ -10,7 +10,7 @@ class ProcessFiles:
             f'files/{self.filename_students}').Nome.to_list()
 
 
-a = ProcessFiles()
-
-alunos = a.get_list_students()
-print(alunos)
+# a = ProcessFiles()
+#
+# alunos = a.get_list_students()
+# print(alunos)
