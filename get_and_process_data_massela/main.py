@@ -1,4 +1,5 @@
 import os
+import time
 from datetime import datetime
 
 from get_and_process_data_massela.process_files.Process_files import \
@@ -19,9 +20,10 @@ def download_files(process_files: ProcessFiles):
     run.initialize_configuration()
     run.navigate_page_login()
     run.login(email=EMAIL, password=PASSWORD)
-    run.get_list_students()
+    run.download_list_students()
+    json_students = process_files.get_list_controller()
     run.navitegate_page_detail()
-    run.download_data_students(list_students=process_files.get_list_students())
+    run.download_data_students(list_students=json_students)
 
 
 def execute_process_files(process_files: ProcessFiles):
@@ -31,10 +33,12 @@ def execute_process_files(process_files: ProcessFiles):
 def main_pipeline():
     process_files = ProcessFiles(
         uri_connection=URL_POSTGRES)
+    process_files.delete_files()
     try:
         download_files(process_files=process_files)
     except Exception as e:
         print(f'ERROR DOWNLOAD ------{e}')
+
     execute_process_files(process_files=process_files)
 
 

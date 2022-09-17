@@ -1,3 +1,4 @@
+import json
 import os
 import time
 
@@ -19,10 +20,10 @@ class AppSisRun(ConfigSelenium):
         super().__init__()
         self.url_home = 'https://appsisrun.com.br/sisrun/login.xhtml'
         self.url_detail = 'https://appsisrun.com.br/sisrun/pages/consulta/analiseTreinos/listaAnaliseTreinos.xhtml'
+        self.students = None
 
     def navigate_page_login(self):
         self.driver.get(self.url_home)
-
         time.sleep(SLEEP)
 
     def login(self, email, password):
@@ -36,7 +37,7 @@ class AppSisRun(ConfigSelenium):
         self.driver.find_element(By.XPATH,
                                  "//span[contains(.,\'Entrar\')]").click()
 
-    def get_list_students(self):
+    def download_list_students(self):
         time.sleep(5)
         self.driver.find_element(By.CSS_SELECTOR, ".fa-users").click()
         time.sleep(5)
@@ -68,53 +69,84 @@ class AppSisRun(ConfigSelenium):
         time.sleep(1)
 
     def download_data_students(self, list_students):
+        self.students = list_students
         print(f'Total de alunos encontrados: {len(list_students)}')
-        for student in list_students:
-            print(f'Baixando -- {student}')
-            self.select_students(student)
+        list_modality = []
 
-            self.driver.find_element(By.ID,
-                                     "frmConsulta:console_label").click()
-            time.sleep(SLEEP)
-            self.driver.find_element(By.ID, "frmConsulta:console_2").click()
-            time.sleep(SLEEP)
+        for pos, student in enumerate(list_students):
+            if student['Corrida'] != str(CURRENT_DATE):
+                list_modality.append('Corrida')
+            if student['Ciclismo'] != str(CURRENT_DATE):
+                list_modality.append('Ciclismo')
+            if student['Natacao'] != str(CURRENT_DATE):
+                list_modality.append('Natação')
+            if student['Musculacao'] != str(CURRENT_DATE):
+                list_modality.append('Musculação')
 
-            self.driver.find_element(By.ID,
-                                     "frmConsulta:filtroDataInicial_input").click()
-            time.sleep(2)
-            self.driver.find_element(By.ID,
-                                     "frmConsulta:filtroDataInicial_input").send_keys(
-                self.format_date(LAST_DATE))
-            time.sleep(SLEEP)
-            self.driver.find_element(By.ID,
-                                     "frmConsulta:filtroDataFinal_input").click()
-            time.sleep(2)
-            self.driver.find_element(By.ID,
-                                     "frmConsulta:filtroDataFinal_input").send_keys(
-                self.format_date(CURRENT_DATE))
-            time.sleep(SLEEP)
+            if list_modality:
 
-            # list_modality = ['Ciclismo']
-            list_modality = ['Ciclismo', 'Corrida', 'Musculação', 'Natação']
-
-            for modality in list_modality:
-                print(f'Iniciando modalidade --> {modality}')
-                self.click_modality(modality=modality)
-                self.driver.find_element(By.XPATH,
-                                         "//button[@id=\'frmConsulta:botaoConsultar\']/span[2]").click()
-                time.sleep(5)
-                html = self.driver.find_element_by_tag_name('html')
-                html.send_keys(Keys.END)
-                time.sleep(3)
-
-                self.driver.find_element(By.XPATH,
-                                         "//img[@id=\'frmConsulta:viewGraficos:tablePlanilha:j_idt368\']").click()
+                print(f'Baixando -- {student["Nome"]}')
+                self.select_students(student["Nome"])
+                self.driver.find_element(By.ID,
+                                         "frmConsulta:console_label").click()
                 time.sleep(SLEEP)
-                self.rename_file(student=student, modality=modality)
-                print('--->> Concluido!')
+                self.driver.find_element(By.ID,
+                                         "frmConsulta:console_2").click()
+                time.sleep(SLEEP)
 
-                time.sleep(5)
-                html.send_keys(Keys.HOME)
+                self.driver.find_element(By.ID,
+                                         "frmConsulta:filtroDataInicial_input").click()
+                time.sleep(2)
+                self.driver.find_element(By.ID,
+                                         "frmConsulta:filtroDataInicial_input").send_keys(
+                    self.format_date(LAST_DATE))
+                time.sleep(SLEEP)
+                self.driver.find_element(By.ID,
+                                         "frmConsulta:filtroDataFinal_input").click()
+                time.sleep(2)
+                self.driver.find_element(By.ID,
+                                         "frmConsulta:filtroDataFinal_input").send_keys(
+                    self.format_date(CURRENT_DATE))
+                time.sleep(SLEEP)
+
+                print(f'CURRENT {CURRENT_DATE}')
+                print(F"Corrida {student['Corrida']}")
+
+                # list_modality = ['Ciclismo']
+                # list_modality = ['Ciclismo', 'Corrida', 'Musculação', 'Natação']
+
+                for modality in list_modality:
+                    print(f'Iniciando modalidade --> {modality}')
+                    self.click_modality(modality=modality)
+                    self.driver.find_element(By.XPATH,
+                                             "//button[@id=\'frmConsulta:botaoConsultar\']/span[2]").click()
+                    time.sleep(5)
+                    html = self.driver.find_element_by_tag_name('html')
+                    html.send_keys(Keys.END)
+                    time.sleep(3)
+
+                    self.driver.find_element(By.XPATH,
+                                             "//img[@id=\'frmConsulta:viewGraficos:tablePlanilha:j_idt368\']").click()
+                    time.sleep(SLEEP)
+                    self.rename_file(student=student['Nome'],
+                                     modality=modality)
+                    print('--->> Concluido!')
+                    if modality == 'Ciclismo':
+                        student.update({'Ciclismo': str(CURRENT_DATE)})
+                    if modality == 'Corrida':
+                        student.update({'Corrida': str(CURRENT_DATE)})
+                    if modality == 'Natação':
+                        student.update({'Natacao': str(CURRENT_DATE)})
+                    if modality == 'Musculação':
+                        student.update({'Musculacao': str(CURRENT_DATE)})
+                    print(student)
+                    self.students[pos] = student
+                    with open('controller_download.json', 'w',
+                              encoding='utf-8') as f:
+                        f.write(json.dumps(self.students))
+                    time.sleep(5)
+                    html.send_keys(Keys.HOME)
+
 
     def select_students(self, student):
         error = True
