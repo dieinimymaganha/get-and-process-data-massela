@@ -10,7 +10,7 @@ from datetime import date, timedelta
 SLEEP = 5
 
 CURRENT_DATE = date.today()
-LAST_DATE = CURRENT_DATE - timedelta(days=30)
+LAST_DATE = CURRENT_DATE - timedelta(days=365)
 
 
 class AppSisRun(ConfigSelenium):
@@ -25,13 +25,13 @@ class AppSisRun(ConfigSelenium):
 
         time.sleep(SLEEP)
 
-    def login(self):
+    def login(self, email, password):
         self.driver.find_element(By.ID, "frmLogin:email").click()
         self.driver.find_element(By.ID, "frmLogin:email").send_keys(
-            "masellaassessoria@gmail.com")
+            email)
         time.sleep(SLEEP)
         self.driver.find_element(By.ID, "frmLogin:senha").click()
-        self.driver.find_element(By.ID, "frmLogin:senha").send_keys("246810")
+        self.driver.find_element(By.ID, "frmLogin:senha").send_keys(password)
         time.sleep(SLEEP)
         self.driver.find_element(By.XPATH,
                                  "//span[contains(.,\'Entrar\')]").click()
@@ -102,7 +102,7 @@ class AppSisRun(ConfigSelenium):
                 self.click_modality(modality=modality)
                 self.driver.find_element(By.XPATH,
                                          "//button[@id=\'frmConsulta:botaoConsultar\']/span[2]").click()
-                time.sleep(10)
+                time.sleep(5)
                 html = self.driver.find_element_by_tag_name('html')
                 html.send_keys(Keys.END)
                 time.sleep(3)
@@ -113,7 +113,7 @@ class AppSisRun(ConfigSelenium):
                 self.rename_file(student=student, modality=modality)
                 print('--->> Concluido!')
 
-                time.sleep(10)
+                time.sleep(5)
                 html.send_keys(Keys.HOME)
 
     def select_students(self, student):
