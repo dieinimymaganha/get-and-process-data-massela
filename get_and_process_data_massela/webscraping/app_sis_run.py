@@ -11,7 +11,7 @@ from datetime import date, timedelta
 SLEEP = 5
 
 CURRENT_DATE = date.today()
-LAST_DATE = CURRENT_DATE - timedelta(days=365)
+LAST_DATE = CURRENT_DATE - timedelta(days=1116)
 
 
 class AppSisRun(ConfigSelenium):
@@ -68,25 +68,34 @@ class AppSisRun(ConfigSelenium):
                                  ".ui-autocomplete-item").click()
         time.sleep(1)
 
-    def download_data_students(self, list_students):
+    def download_data_students(self, list_students, active_modality):
         self.students = list_students
         print(f'Total de alunos encontrados: {len(list_students)}')
-        list_modality = []
 
         for pos, student in enumerate(list_students):
-            if student['Corrida'] != str(CURRENT_DATE):
+            list_modality = []
+            if student['Corrida'] != str(
+                    CURRENT_DATE) and 'Corrida' in active_modality:
                 list_modality.append('Corrida')
-            if student['Ciclismo'] != str(CURRENT_DATE):
+            if student['Ciclismo'] != str(
+                    CURRENT_DATE) and 'Ciclismo' in active_modality:
                 list_modality.append('Ciclismo')
-            if student['Natacao'] != str(CURRENT_DATE):
+            if student['Natacao'] != str(
+                    CURRENT_DATE) and 'Natação' in active_modality:
                 list_modality.append('Natação')
-            if student['Musculacao'] != str(CURRENT_DATE):
+            if student['Musculacao'] != str(
+                    CURRENT_DATE) and 'Musculação' in active_modality:
                 list_modality.append('Musculação')
-
             if list_modality:
-
-                print(f'Baixando -- {student["Nome"]}')
+                print(f'LISTA DE MODALIDADES{list_modality}')
                 self.select_students(student["Nome"])
+                try:
+                    self.driver.find_element(By.CSS_SELECTOR,
+                                             ".ui-autocomplete-item").click()
+                except Exception as e:
+                    if 'Message: element not interactable' not in str(e):
+                        print(f'DEU ERRO {e}')
+                        continue
                 self.driver.find_element(By.ID,
                                          "frmConsulta:console_label").click()
                 time.sleep(SLEEP)
@@ -109,27 +118,28 @@ class AppSisRun(ConfigSelenium):
                     self.format_date(CURRENT_DATE))
                 time.sleep(SLEEP)
 
-                print(f'CURRENT {CURRENT_DATE}')
-                print(F"Corrida {student['Corrida']}")
-
-                # list_modality = ['Ciclismo']
-                # list_modality = ['Ciclismo', 'Corrida', 'Musculação', 'Natação']
-
                 for modality in list_modality:
                     print(f'Iniciando modalidade --> {modality}')
                     self.click_modality(modality=modality)
                     self.driver.find_element(By.XPATH,
                                              "//button[@id=\'frmConsulta:botaoConsultar\']/span[2]").click()
-                    time.sleep(5)
+
+                    time.sleep(20)
                     html = self.driver.find_element_by_tag_name('html')
                     html.send_keys(Keys.END)
-                    time.sleep(3)
-
-                    self.driver.find_element(By.XPATH,
-                                             "//img[@id=\'frmConsulta:viewGraficos:tablePlanilha:j_idt368\']").click()
-                    time.sleep(SLEEP)
+                    count_click_download = 0
+                    while count_click_download <= 5:
+                        try:
+                            self.driver.find_element(By.XPATH,
+                                                     "//img[@id=\'frmConsulta:viewGraficos:tablePlanilha:j_idt368\']").click()
+                            break
+                        except Exception as e:
+                            print(f'ERRO CLICK ---::>>> {e}')
+                            count_click_download += 1
+                    time.sleep(20)
                     self.rename_file(student=student['Nome'],
                                      modality=modality)
+
                     print('--->> Concluido!')
                     if modality == 'Ciclismo':
                         student.update({'Ciclismo': str(CURRENT_DATE)})
@@ -139,7 +149,6 @@ class AppSisRun(ConfigSelenium):
                         student.update({'Natacao': str(CURRENT_DATE)})
                     if modality == 'Musculação':
                         student.update({'Musculacao': str(CURRENT_DATE)})
-                    print(student)
                     self.students[pos] = student
                     with open('controller_download.json', 'w',
                               encoding='utf-8') as f:
@@ -147,27 +156,22 @@ class AppSisRun(ConfigSelenium):
                     time.sleep(5)
                     html.send_keys(Keys.HOME)
 
-
     def select_students(self, student):
+        # student = 'Adalberto Bernardo Carvalho'
+        print(f'Baixando -- {student}')
         error = True
-        while error:
-            try:
-                time.sleep(2)
-                self.driver.find_element(By.ID,
-                                         "frmConsulta:comboAluno_input").click()
-                time.sleep(1)
-                self.driver.find_element(By.ID,
-                                         "frmConsulta:comboAluno_input").clear()
-                self.driver.find_element(By.ID,
-                                         "frmConsulta:comboAluno_input").click()
-                self.driver.find_element(By.ID,
-                                         "frmConsulta:comboAluno_input").send_keys(
-                    student)
-                time.sleep(10)
-                error = False
-            except Exception as e:
-                self.driver.refresh()
-                time.sleep(5)
+        time.sleep(2)
+        self.driver.find_element(By.ID,
+                                 "frmConsulta:comboAluno_input").click()
+        time.sleep(1)
+        self.driver.find_element(By.ID,
+                                 "frmConsulta:comboAluno_input").clear()
+        self.driver.find_element(By.ID,
+                                 "frmConsulta:comboAluno_input").click()
+        self.driver.find_element(By.ID,
+                                 "frmConsulta:comboAluno_input").send_keys(
+            student)
+        time.sleep(15)
 
     def rename_file(self, student, modality):
         student = student.strip()

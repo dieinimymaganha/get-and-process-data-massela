@@ -2,7 +2,7 @@ import os
 import time
 from datetime import datetime
 
-from get_and_process_data_massela.process_files.Process_files import \
+from get_and_process_data_massela.process_files.process_files import \
     ProcessFiles
 from get_and_process_data_massela.webscraping.app_sis_run import AppSisRun
 
@@ -14,16 +14,28 @@ EMAIL = os.getenv('EMAIL')
 PASSWORD = os.getenv('PASSWORD')
 URL_POSTGRES = os.getenv('URL_POSTGRES')
 
+# Opções de Download 'Natação', 'Ciclismo', 'Musculação', 'Corrida'
+ACTIVE_MODALITYS = ['Musculação', 'Corrida']
+
 
 def download_files(process_files: ProcessFiles):
-    run = AppSisRun()
-    run.initialize_configuration()
-    run.navigate_page_login()
-    run.login(email=EMAIL, password=PASSWORD)
-    run.download_list_students()
-    json_students = process_files.get_list_controller()
-    run.navitegate_page_detail()
-    run.download_data_students(list_students=json_students)
+    count = 0
+
+    while count <= 500:
+        run = AppSisRun()
+        try:
+            run.initialize_configuration()
+            run.navigate_page_login()
+            run.login(email=EMAIL, password=PASSWORD)
+            # run.download_list_students()
+            json_students = process_files.get_list_controller()
+            run.navitegate_page_detail()
+            run.download_data_students(list_students=json_students,
+                                       active_modality=ACTIVE_MODALITYS)
+        except Exception as e:
+            print(f'ERROR ---> {e}')
+            run.driver.quit()
+            count += 1
 
 
 def execute_process_files(process_files: ProcessFiles):
@@ -33,12 +45,8 @@ def execute_process_files(process_files: ProcessFiles):
 def main_pipeline():
     process_files = ProcessFiles(
         uri_connection=URL_POSTGRES)
-    process_files.delete_files()
-    try:
-        download_files(process_files=process_files)
-    except Exception as e:
-        print(f'ERROR DOWNLOAD ------{e}')
-
+    # process_files.delete_files()
+    download_files(process_files=process_files)
     execute_process_files(process_files=process_files)
 
 

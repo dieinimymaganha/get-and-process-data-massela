@@ -14,7 +14,8 @@ class ConfigSelenium:
         user_agent = ("Mozilla/5.0 (Windows NT 10.0; Win64; x64) "
                       "AppleWebKit/537.36 (KHTML, like Gecko) "
                       "Chrome/91.0.4472.114 Safari/537.36")
-        self.chrome_options.headless = False
+        # self.chrome_options.headless = True
+        self.chrome_options.add_argument("--headless")
         self.chrome_options.add_argument(f'user-agent={user_agent}')
         self.chrome_options.add_argument('--ignore-certificate-errors')
         self.chrome_options.add_argument('--allow-running-insecure-content')
