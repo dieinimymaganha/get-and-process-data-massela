@@ -6,21 +6,19 @@ from selenium.webdriver.common.by import By
 from selenium.webdriver.common.keys import Keys
 
 from get_and_process_data_massela.webscraping import ConfigSelenium
-from datetime import date, timedelta
 
 SLEEP = 5
-
-CURRENT_DATE = date.today()
-LAST_DATE = CURRENT_DATE - timedelta(days=1116)
 
 
 class AppSisRun(ConfigSelenium):
 
-    def __init__(self):
+    def __init__(self, current_date, last_date):
         super().__init__()
         self.url_home = 'https://appsisrun.com.br/sisrun/login.xhtml'
         self.url_detail = 'https://appsisrun.com.br/sisrun/pages/consulta/analiseTreinos/listaAnaliseTreinos.xhtml'
         self.students = None
+        self.current_date = current_date
+        self.last_date = last_date
 
     def navigate_page_login(self):
         self.driver.get(self.url_home)
@@ -75,16 +73,16 @@ class AppSisRun(ConfigSelenium):
         for pos, student in enumerate(list_students):
             list_modality = []
             if student['Corrida'] != str(
-                    CURRENT_DATE) and 'Corrida' in active_modality:
+                    self.current_date) and 'Corrida' in active_modality:
                 list_modality.append('Corrida')
             if student['Ciclismo'] != str(
-                    CURRENT_DATE) and 'Ciclismo' in active_modality:
+                    self.current_date) and 'Ciclismo' in active_modality:
                 list_modality.append('Ciclismo')
             if student['Natacao'] != str(
-                    CURRENT_DATE) and 'Natação' in active_modality:
+                    self.current_date) and 'Natação' in active_modality:
                 list_modality.append('Natação')
             if student['Musculacao'] != str(
-                    CURRENT_DATE) and 'Musculação' in active_modality:
+                    self.current_date) and 'Musculação' in active_modality:
                 list_modality.append('Musculação')
             if list_modality:
                 print(f'LISTA DE MODALIDADES{list_modality}')
@@ -108,14 +106,14 @@ class AppSisRun(ConfigSelenium):
                 time.sleep(2)
                 self.driver.find_element(By.ID,
                                          "frmConsulta:filtroDataInicial_input").send_keys(
-                    self.format_date(LAST_DATE))
+                    self.format_date(self.last_date))
                 time.sleep(SLEEP)
                 self.driver.find_element(By.ID,
                                          "frmConsulta:filtroDataFinal_input").click()
                 time.sleep(2)
                 self.driver.find_element(By.ID,
                                          "frmConsulta:filtroDataFinal_input").send_keys(
-                    self.format_date(CURRENT_DATE))
+                    self.format_date(self.current_date))
                 time.sleep(SLEEP)
 
                 for modality in list_modality:
@@ -124,7 +122,7 @@ class AppSisRun(ConfigSelenium):
                     self.driver.find_element(By.XPATH,
                                              "//button[@id=\'frmConsulta:botaoConsultar\']/span[2]").click()
 
-                    time.sleep(20)
+                    time.sleep(5)
                     html = self.driver.find_element_by_tag_name('html')
                     html.send_keys(Keys.END)
                     count_click_download = 0
@@ -136,19 +134,19 @@ class AppSisRun(ConfigSelenium):
                         except Exception as e:
                             print(f'ERRO CLICK ---::>>> {e}')
                             count_click_download += 1
-                    time.sleep(20)
+                    time.sleep(5)
                     self.rename_file(student=student['Nome'],
                                      modality=modality)
 
                     print('--->> Concluido!')
                     if modality == 'Ciclismo':
-                        student.update({'Ciclismo': str(CURRENT_DATE)})
+                        student.update({'Ciclismo': str(self.current_date)})
                     if modality == 'Corrida':
-                        student.update({'Corrida': str(CURRENT_DATE)})
+                        student.update({'Corrida': str(self.current_date)})
                     if modality == 'Natação':
-                        student.update({'Natacao': str(CURRENT_DATE)})
+                        student.update({'Natacao': str(self.current_date)})
                     if modality == 'Musculação':
-                        student.update({'Musculacao': str(CURRENT_DATE)})
+                        student.update({'Musculacao': str(self.current_date)})
                     self.students[pos] = student
                     with open('controller_download.json', 'w',
                               encoding='utf-8') as f:
@@ -171,7 +169,7 @@ class AppSisRun(ConfigSelenium):
         self.driver.find_element(By.ID,
                                  "frmConsulta:comboAluno_input").send_keys(
             student)
-        time.sleep(15)
+        time.sleep(10)
 
     def rename_file(self, student, modality):
         student = student.strip()

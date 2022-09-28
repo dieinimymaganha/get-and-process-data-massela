@@ -4,7 +4,7 @@ import json
 
 import numpy as np
 import pandas as pd
-from dateutil.parser import parse
+
 from sqlalchemy import text
 
 from get_and_process_data_massela.Utils.connection_postgres import \
@@ -130,6 +130,8 @@ class ProcessFiles:
         self.df_students.rename(columns={"Nome": "name", "Sexo": "gender",
                                          "Data de Nascimento": 'birth_date'},
                                 inplace=True)
+        self.df_students.name = self.df_students.name.apply(lambda x: x.strip())
+
         self.df_students.birth_date = self.df_students.birth_date.apply(
             lambda x: self.convert_date(x))
 
@@ -173,7 +175,7 @@ class ProcessFiles:
             f'{os.path.join(os.getcwd(), "files/")}*.xls')
         for file in local_files:
             filename = os.path.basename(file)
-            if filename != 'Alunos.xls':
+            if 'Alunos' not in filename:
                 if filename != 'planilha_evolucao.xls':
                     name_student, modality = self.identify_name_and_modality(
                         filename=filename)
@@ -197,7 +199,11 @@ class ProcessFiles:
                                        df.columns[15]: "calories",
                                        df.columns[16]: "day_2"
                                        }, inplace=True)
-                    df.drop(['day_1', 'day_2'], axis=1, inplace=True)
+                    df.drop(['day_1', 'day_2', 'proposed_distance',
+                             'avg_distance_per_training',
+                             'minimum_proposed_time', 'maximum_proposed_time',
+                             'avg_time_per_training'], axis=1,
+                            inplace=True)
                     df['name_student'] = name_student
                     df['modality'] = modality
                     df = df[:-1]
@@ -211,7 +217,6 @@ class ProcessFiles:
             self.df_workouts = list_dfs[0]
             self.df_workouts.sort_values(by=['name_student', 'modality'])
         else:
-
             exit()
 
     def convert_type_columns_workouts(self):
@@ -224,19 +229,12 @@ class ProcessFiles:
             lambda x: int(x))
         self.df_workouts.avg_pace = self.df_workouts.avg_pace.apply(
             lambda x: self.convert_pace(x))
-        self.df_workouts.proposed_distance = (self.df_workouts.
-                                              proposed_distance.
-                                              apply(lambda x:
-                                                    self.convert_float(x)))
+
         self.df_workouts.distance_done = (self.df_workouts.
                                           distance_done.
                                           apply(lambda x:
                                                 self.convert_float(x)))
-        self.df_workouts.avg_distance_per_training = (self.df_workouts.
-                                                      avg_distance_per_training
-                                                      .apply(lambda x:
-                                                             self.convert_float(
-                                                                 x)))
+
         self.df_workouts.avg_speed = (self.df_workouts.
                                       avg_speed.apply(lambda x:
                                                       self.convert_float(x)))
@@ -253,9 +251,12 @@ class ProcessFiles:
     def join_workouts_modality_students(self):
         self.get_students_postgres()
         self.df_workouts.set_index('name_student', inplace=True)
+
         df_final = self.df_students_postgresql.join(self.df_workouts,
                                                     how="inner").reset_index()
+        print(self.df_workouts)
         df_final.set_index('modality', inplace=True)
+
         df_final = df_final.join(self.df_modality, how='inner').reset_index()
         df_final.drop(['modality', 'name_student'], axis=1, inplace=True)
         return df_final
@@ -265,9 +266,7 @@ class ProcessFiles:
             query = text(""" 
                         INSERT INTO workouts(student_id, training_date, 
                         proposed_workouts, workouts_done, 
-                        proposed_distance, distance_done, 
-                        avg_distance_per_training, minimum_proposed_time, 
-                        maximum_proposed_time, time_done, avg_time_per_training, 
+                        distance_done, time_done,
                         avg_speed, avg_pace, avg_fc, accumulated_elevation, 
                         calories, modality_id)
                         VALUES %s
@@ -275,13 +274,8 @@ class ProcessFiles:
                         DO  UPDATE SET training_date = excluded.training_date,
                         proposed_workouts  = excluded.proposed_workouts  ,
                         workouts_done = excluded.workouts_done,
-                        proposed_distance = excluded.proposed_distance,
                         distance_done = excluded.distance_done,
-                        avg_distance_per_training =  excluded.avg_distance_per_training,
-                        minimum_proposed_time = excluded.minimum_proposed_time,
-                        maximum_proposed_time = excluded.minimum_proposed_time,
                         time_done =  excluded.time_done,
-                        avg_time_per_training = excluded.avg_time_per_training,
                         avg_speed = excluded.avg_speed,
                         avg_pace =  excluded.avg_pace,
                         avg_fc = excluded.avg_fc,
