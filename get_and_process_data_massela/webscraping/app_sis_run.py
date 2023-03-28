@@ -37,10 +37,9 @@ class AppSisRun(ConfigSelenium):
 
     def download_list_students(self):
         time.sleep(5)
-        self.driver.find_element(By.CSS_SELECTOR, ".fa-users").click()
+        self.driver.find_element(By.CSS_SELECTOR, "#formGrafico\\3Aj_idt449_content img").click()
         time.sleep(5)
-        self.driver.find_element(By.CSS_SELECTOR,
-                                 "#frmConsulta\\3AtabCadastro\\3Aj_idt401 > .ui-button-text").click()
+        self.driver.find_element(By.CSS_SELECTOR, "#frmConsulta\\3AtabCadastro\\3Aj_idt403 > .ui-button-text").click()
 
         time.sleep(SLEEP)
 
@@ -128,8 +127,8 @@ class AppSisRun(ConfigSelenium):
                     count_click_download = 0
                     while count_click_download <= 5:
                         try:
-                            self.driver.find_element(By.XPATH,
-                                                     "//img[@id=\'frmConsulta:viewGraficos:tablePlanilha:j_idt368\']").click()
+                            self.driver.find_element(By.ID,
+                                                     "frmConsulta:viewGraficos:tablePlanilha:j_idt370").click()
                             break
                         except Exception as e:
                             print(f'ERRO CLICK ---::>>> {e}')

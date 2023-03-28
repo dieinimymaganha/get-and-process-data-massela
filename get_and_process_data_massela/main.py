@@ -20,7 +20,7 @@ ACTIVE_MODALITYS = ['Musculação', 'Corrida']
 from datetime import date, timedelta
 
 CURRENT_DATE = date.today()
-LAST_DATE = CURRENT_DATE - timedelta(days=15)
+LAST_DATE = CURRENT_DATE - timedelta(days=1825)
 
 
 def download_files(process_files: ProcessFiles):
@@ -51,9 +51,9 @@ def execute_process_files(process_files: ProcessFiles):
 def main_pipeline():
     process_files = ProcessFiles(
         uri_connection=URL_POSTGRES)
-    process_files.delete_files()
+    # process_files.delete_files()
     download_files(process_files=process_files)
-    execute_process_files(process_files=process_files)
+    # execute_process_files(process_files=process_files)
 
 
 if __name__ == '__main__':
